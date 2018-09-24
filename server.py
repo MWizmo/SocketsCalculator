@@ -1,4 +1,5 @@
 import socket
+import _thread
 
 class Calculator:
     def __init__(self):
@@ -96,17 +97,22 @@ class Calculator:
             self.error = ''
             return answer
 
+def on_new_client(conn, addr):
+    print('Connected ',addr)
+    while True:
+        data = conn.recv(1024).decode('utf-8')
+        if not data:
+            continue
+        calc.expression = data
+        answer = calc.Calculate(calc.TralslateToPolish(data))
+        conn.send(answer.encode('utf-8'))
+
 sock = socket.socket()
 sock.bind(('', 9000))
-sock.listen(1)
+sock.listen(11)
 calc=Calculator()
-conn, addr = sock.accept()
-print('connected:', addr)
 
 while True:
-    data = conn.recv(1024).decode('utf-8')
-    if not data:
-        continue
-    calc.expression=data
-    answer=calc.Calculate(calc.TralslateToPolish(data))
-    conn.send(answer.encode('utf-8'))
+    conn, addr = sock.accept()
+    _thread.start_new_thread(on_new_client, (conn, addr))
+
